@@ -54,6 +54,10 @@ router.get(
 	WalletController.getAllWallets
 );
 
-router.get("/my-wallet", checkAuthorization(...Object.values([Role.USER, Role.AGENT])), WalletController.getMyWallet);
+router.get(
+	"/my-wallet",
+	checkAuthorization(...Object.values([Role.USER, Role.AGENT])),
+	WalletController.getMyWallet
+);
 
 export const WalletRoutes = router;
