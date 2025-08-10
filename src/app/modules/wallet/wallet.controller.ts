@@ -1,0 +1,115 @@
+import { Request, Response } from "express";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
+import httpStatus from "http-status-codes";
+import { WalletService } from "./wallet.service";
+import AppError from "../../helpers/appError";
+
+const createWallet = catchAsync(async (req: Request, res: Response) => {
+	if (!req.user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+
+	const newWallet = await WalletService.createWallet(req.body, req.user);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.CREATED,
+		message: "Wallet created successfully",
+		data: newWallet,
+	});
+});
+
+const topUpWallet = catchAsync(async (req: Request, res: Response) => {
+	const result = await WalletService.topUpWallet(req.body);
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "Wallet topped up successfully",
+		data: result,
+	});
+});
+
+const sendMoney = catchAsync(async (req: Request, res: Response) => {
+	if (!req.user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+	const { recipientId, amount } = req.body;
+	const sender = req.user;
+	const result = await WalletService.sendMoney(sender, recipientId, amount);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "Money sent successfully",
+		data: result,
+	});
+});
+
+const cashIn = catchAsync(async (req: Request, res: Response) => {
+	if (!req.user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+	const { recipientId, amount } = req.body;
+	const agent = req.user;
+	const result = await WalletService.cashIn(agent, recipientId, amount);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "Cash in successful",
+		data: result,
+	});
+});
+
+const cashOut = catchAsync(async (req: Request, res: Response) => {
+	if (!req.user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+	const { agentId, amount } = req.body;
+	const user = req.user;
+	const result = await WalletService.cashOut(user, agentId, amount);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "Cash out successful",
+		data: result,
+	});
+});
+
+const getAllWallets = catchAsync(async (req: Request, res: Response) => {
+	const result = await WalletService.getAllWallets();
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "All wallets retrieved successfully",
+		data: result.data,
+		meta: result.meta,
+	});
+});
+
+const getMyWallet = catchAsync(async (req: Request, res: Response) => {
+	if (!req.user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+
+	const wallet = await WalletService.getMyWallet(req.user);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "My wallet retrieved successfully",
+		data: wallet,
+	});
+});
+
+export const WalletController = {
+	createWallet,
+	topUpWallet,
+	sendMoney,
+	cashIn,
+	cashOut,
+	getAllWallets,
+	getMyWallet
+};
