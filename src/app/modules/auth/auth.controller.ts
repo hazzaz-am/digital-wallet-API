@@ -6,7 +6,8 @@ import passport from "passport";
 import { createUserTokens } from "../../utils/userTokens";
 import { setCookie } from "../../utils/setCookie";
 import { sendResponse } from "../../utils/sendResponse";
-import httpStatus from 'http-status-codes';
+import httpStatus from "http-status-codes";
+import { AuthService } from "./auth.service";
 
 const credentialsLogin = catchAsync(
 	async (req: Request, res: Response, next: NextFunction) => {
@@ -46,6 +47,64 @@ const credentialsLogin = catchAsync(
 	}
 );
 
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+	const decodedToken = req.user;
+	if (!decodedToken) {
+		throw new AppError(httpStatus.NOT_FOUND, "User not found");
+	}
+	const { oldPassword, newPassword } = req.body;
+	await AuthService.resetPassword(decodedToken, oldPassword, newPassword);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		message: "Password reset successful",
+		success: true,
+		data: null,
+	});
+});
+
+const getNewAccessToken = catchAsync(async (req: Request, res: Response) => {
+	const refreshToken = req.cookies.refreshToken;
+
+	if (!refreshToken) {
+		throw new AppError(httpStatus.UNAUTHORIZED, "Authorization denied");
+	}
+
+	const tokenInfo = await AuthService.getNewAccessToken(refreshToken);
+	setCookie(res, tokenInfo);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		message: "Login successfully",
+		success: true,
+		data: tokenInfo,
+	});
+});
+
+const logout = catchAsync(async (_req: Request, res: Response) => {
+	res.clearCookie("accessToken", {
+		httpOnly: true,
+		secure: false,
+		sameSite: "lax",
+	});
+
+	res.clearCookie("refreshToken", {
+		httpOnly: true,
+		secure: false,
+		sameSite: "lax",
+	});
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		message: "Logout successful",
+		success: true,
+		data: null,
+	});
+});
+
 export const AuthController = {
 	credentialsLogin,
+	logout,
+	resetPassword,
+	getNewAccessToken
 };
