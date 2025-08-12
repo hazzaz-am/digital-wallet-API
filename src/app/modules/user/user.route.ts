@@ -19,6 +19,12 @@ router.get(
 	UserController.getAllUsers
 );
 
+router.get(
+	"/:id",
+	checkAuthorization(...Object.values(Role)),
+	UserController.getUserById
+);
+
 router.patch(
 	"/:id",
 	zodSchemaValidation(updateUserZodSchema),

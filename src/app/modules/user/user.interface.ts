@@ -17,6 +17,10 @@ export enum IApprovalStatus {
 	REJECTED = "REJECTED",
 }
 
+export interface IAgentData {
+	commissionRate?: number;
+	approvalStatus?: IApprovalStatus;
+}
 
 export interface IUser {
 	_id?: Types.ObjectId;
@@ -25,8 +29,5 @@ export interface IUser {
 	password?: string;
 	isDeleted?: boolean;
 	role: Role;
-	agentData?: {
-		commissionRate?: number;
-		approvalStatus?: IApprovalStatus;
-	};
+	agentData?: IAgentData
 }

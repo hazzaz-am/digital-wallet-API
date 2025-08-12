@@ -4,6 +4,7 @@ import { UserService } from "./user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import AppError from "../../helpers/appError";
+import { Role } from "./user.interface";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
 	const user = await UserService.createUser(req.body);
@@ -31,8 +32,6 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-const addMoneyToWallet = catchAsync(async (req: Request, res: Response) => {});
-
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 	const result = await UserService.getAllUsers();
 
@@ -45,9 +44,20 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const getUserById = catchAsync(async (req: Request, res: Response) => {
+	const user = await UserService.getUserById(req.params.id);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "User retrieved successfully",
+		data: user,
+	});
+});
+
 export const UserController = {
 	createUser,
 	updateUser,
 	getAllUsers,
-	addMoneyToWallet,
+	getUserById,
 };

@@ -2,12 +2,9 @@ import z from "zod";
 import { IApprovalStatus, Role } from "./user.interface";
 
 export const createUserZodSchema = z.object({
-	name: z
-		.string({
-			error: "Name must be a string",
-		})
-		.min(2, { error: "Name is required" })
-		.max(100, { error: "Name must be less than 100 characters" }),
+	role: z.enum(Role, {
+		error: "Role must be one of the following: USER, ADMIN, AGENT",
+	}),
 	phone: z
 		.string({ error: "Phone Number must be string" })
 		.regex(/^(?:\+8801\d{9}|01\d{9})$/, {
@@ -69,5 +66,5 @@ export const updateUserZodSchema = z.object({
 				})
 				.optional(),
 		})
-		.optional()
+		.optional(),
 });

@@ -4,6 +4,11 @@ import cors from "cors";
 import { router } from "./app/routes";
 import expressSession from "express-session";
 import { envVars } from "./app/config/env";
+import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
+import passport from "passport";
+import { notFoundHandler } from "./app/middlewares/notFoundHandler";
+import "./app/config/passport";
+
 
 const app = express();
 
@@ -14,7 +19,8 @@ app.use(
 		saveUninitialized: false,
 	})
 );
-
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors());
@@ -27,4 +33,6 @@ app.get("/", (_req: Request, res: Response) => {
 	});
 });
 
+app.use(globalErrorHandler);
+app.use(notFoundHandler);
 export default app;

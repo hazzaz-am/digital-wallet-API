@@ -5,7 +5,6 @@ import { verifyToken } from "../utils/jwtToken";
 import { envVars } from "../config/env";
 import { JwtPayload } from "jsonwebtoken";
 import { UserModel } from "../modules/user/user.model";
-import { IsActive } from "../modules/user/user.interface";
 
 export const checkAuthorization =
 	(...authRoles: string[]) =>
@@ -30,10 +29,6 @@ export const checkAuthorization =
 				throw new AppError(httpStatus.UNAUTHORIZED, "User not found");
 			}
 
-			if (user.isActive === IsActive.BLOCKED) {
-				throw new AppError(httpStatus.BAD_REQUEST, "User is blocked");
-			}
-
 			if (user.isDeleted) {
 				throw new AppError(httpStatus.BAD_REQUEST, "User is deleted");
 			}
@@ -46,6 +41,7 @@ export const checkAuthorization =
 			}
 
 			req.user = verifiedUser;
+			next()
 		} catch (error) {
 			next(error);
 		}

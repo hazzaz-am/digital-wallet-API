@@ -1,5 +1,5 @@
 import AppError from "../../helpers/appError";
-import { IUser, Role } from "./user.interface";
+import { IAgentData, IApprovalStatus, IUser, Role } from "./user.interface";
 import { UserModel } from "./user.model";
 import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";
@@ -29,7 +29,15 @@ const createUser = async (payload: Partial<IUser>) => {
 		...rest,
 	});
 
-	return user;
+	let updatedUser = user.toObject();
+
+	if (updatedUser.role === Role.AGENT && updatedUser.agentData) {
+		updatedUser.agentData.commissionRate = 0.2;
+	}
+
+	delete updatedUser["password"];
+
+	return updatedUser;
 };
 
 const updateUser = async (
@@ -77,7 +85,13 @@ const updateUser = async (
 		runValidators: true,
 	});
 
-	return updatedUser;
+	let result;
+	if (updatedUser) {
+		result = updatedUser.toObject();
+		delete result["password"];
+	}
+
+	return result;
 };
 
 const getAllUsers = async () => {
@@ -92,8 +106,22 @@ const getAllUsers = async () => {
 	};
 };
 
+const getUserById = async (userId: string) => {
+	const user = await UserModel.findById(userId);
+
+	if (!user) {
+		throw new AppError(httpStatus.NOT_FOUND, "User not found");
+	}
+
+	const result = user.toObject();
+	delete result["password"];
+
+	return result;
+};
+
 export const UserService = {
 	createUser,
 	updateUser,
+	getUserById,
 	getAllUsers,
 };

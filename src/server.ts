@@ -9,9 +9,9 @@ let server: Server;
 const startServer = async () => {
 	try {
 		await mongoose.connect(`${envVars.MONGODB_URI}`);
-		console.log("Database Connected");
+		console.log("🟢 Database Connected");
 		server = app.listen(envVars.PORT, () => {
-			console.log(`Server is listening on PORT: ${envVars.PORT}`);
+			console.log(`🟢 Server is listening on PORT: ${envVars.PORT}`);
 		});
 	} catch (error) {
 		console.log("error from server file", error);
