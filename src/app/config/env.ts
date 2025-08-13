@@ -13,6 +13,8 @@ interface EnvConfig {
 	JWT_REFRESH_EXPIRES_IN: string;
 	EXPRESS_SESSION_SECRET: string;
 	AGENT_COMMISSION_RATE: string;
+	SUPER_ADMIN_PHONE: string;
+	SUPER_ADMIN_PASSWORD: string;
 }
 
 const localEnvVariables = (): EnvConfig => {
@@ -26,7 +28,9 @@ const localEnvVariables = (): EnvConfig => {
 		"JWT_REFRESH_SECRET_TOKEN",
 		"JWT_REFRESH_EXPIRES_IN",
 		"EXPRESS_SESSION_SECRET",
-		"AGENT_COMMISSION_RATE"
+		"AGENT_COMMISSION_RATE",
+		"SUPER_ADMIN_PHONE",
+		"SUPER_ADMIN_PASSWORD"
 	];
 
 	requiredEnvVariables.forEach((key) => {
@@ -45,7 +49,9 @@ const localEnvVariables = (): EnvConfig => {
 		JWT_REFRESH_SECRET_TOKEN: process.env.JWT_REFRESH_SECRET_TOKEN as string,
 		JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN as string,
 		EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET as string,
-		AGENT_COMMISSION_RATE: process.env.AGENT_COMMISSION_RATE as string
+		AGENT_COMMISSION_RATE: process.env.AGENT_COMMISSION_RATE as string,
+		SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE as string,
+		SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD as string
 	};
 };
 
