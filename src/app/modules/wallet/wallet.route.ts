@@ -56,7 +56,7 @@ router.get(
 
 router.get(
 	"/my-wallet",
-	checkAuthorization(...Object.values([Role.USER, Role.AGENT])),
+	checkAuthorization(...Object.values(Role)),
 	WalletController.getMyWallet
 );
 

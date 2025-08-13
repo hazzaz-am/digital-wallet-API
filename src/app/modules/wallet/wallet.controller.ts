@@ -21,7 +21,12 @@ const createWallet = catchAsync(async (req: Request, res: Response) => {
 });
 
 const topUpWallet = catchAsync(async (req: Request, res: Response) => {
-	const result = await WalletService.topUpWallet(req.body);
+	const decodedToken = req.user
+
+	if (!decodedToken) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+	const result = await WalletService.topUpWallet(req.body, decodedToken);
 	sendResponse(res, {
 		success: true,
 		statusCode: httpStatus.OK,
@@ -34,9 +39,9 @@ const sendMoney = catchAsync(async (req: Request, res: Response) => {
 	if (!req.user) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
-	const { recipientId, amount } = req.body;
+	const { phone, amount } = req.body;
 	const sender = req.user;
-	const result = await WalletService.sendMoney(sender, recipientId, amount);
+	const result = await WalletService.sendMoney(sender, phone, amount);
 
 	sendResponse(res, {
 		success: true,
@@ -50,9 +55,9 @@ const cashIn = catchAsync(async (req: Request, res: Response) => {
 	if (!req.user) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
-	const { recipientId, amount } = req.body;
+	const { phone, amount } = req.body;
 	const agent = req.user;
-	const result = await WalletService.cashIn(agent, recipientId, amount);
+	const result = await WalletService.cashIn(agent, phone, amount);
 
 	sendResponse(res, {
 		success: true,
@@ -66,9 +71,9 @@ const cashOut = catchAsync(async (req: Request, res: Response) => {
 	if (!req.user) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
-	const { agentId, amount } = req.body;
+	const { phone, amount } = req.body;
 	const user = req.user;
-	const result = await WalletService.cashOut(user, agentId, amount);
+	const result = await WalletService.cashOut(user, phone, amount);
 
 	sendResponse(res, {
 		success: true,

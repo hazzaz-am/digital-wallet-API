@@ -7,6 +7,7 @@ import mongoose, { Types } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
 import { TransactionModel } from "../transaction/transaction.model";
 import { ITransactionType } from "../transaction/transaction.interface";
+import { Role } from "../user/user.interface";
 
 interface ITopUpWallet {
 	walletId: Types.ObjectId;
@@ -29,26 +30,19 @@ const createWallet = async (
 		);
 	}
 
-	if (walletData.userId !== payload._id) {
+	if (walletData.userId !== payload.userId) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
 
-	let wallet: IWallet = {
-		userId: user._id,
-		type: walletData.type as IWalletType,
-		status: IWalletStatus.ACTIVE,
-		balance: 50,
-		currency: "BDT",
-	};
-
 	const newWallet = await WalletModel.create({
-		...wallet,
+		userId: user._id,
+		type: user.role,
 	});
 
 	return newWallet;
 };
 
-const topUpWallet = async (payload: ITopUpWallet) => {
+const topUpWallet = async (payload: ITopUpWallet, decodedToken: JwtPayload) => {
 	const { walletId, amount } = payload;
 
 	const session = await mongoose.startSession();
@@ -62,6 +56,10 @@ const topUpWallet = async (payload: ITopUpWallet) => {
 
 		if (wallet.status === IWalletStatus.BLOCKED) {
 			throw new AppError(httpStatus.BAD_REQUEST, "Wallet is blocked");
+		}
+
+		if (wallet.userId.toString() !== decodedToken.userId) {
+			throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 		}
 
 		wallet.balance += Number(amount);
@@ -95,12 +93,28 @@ const topUpWallet = async (payload: ITopUpWallet) => {
 	}
 };
 
-const sendMoney = async (
-	sender: JwtPayload,
-	recipientId: string,
-	amount: number
-) => {
-	if (sender._id === recipientId) {
+const sendMoney = async (sender: JwtPayload, phone: string, amount: number) => {
+	const user = await UserModel.findOne({ phone });
+
+	if (!user) {
+		throw new AppError(
+			httpStatus.NOT_FOUND,
+			"Account does not exist for this phone number"
+		);
+	}
+
+	if (user.isDeleted) {
+		throw new AppError(httpStatus.NOT_FOUND, "Account is deleted");
+	}
+
+	if (user.role === Role.AGENT) {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"User cannot send money to agents"
+		);
+	}
+
+	if (sender.userId === user._id.toString()) {
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
 			"You cannot send money to yourself"
@@ -112,7 +126,7 @@ const sendMoney = async (
 
 	try {
 		const senderWallet = await WalletModel.findOne({
-			userId: sender._id,
+			userId: sender.userId,
 		}).session(session);
 
 		if (!senderWallet) {
@@ -123,7 +137,7 @@ const sendMoney = async (
 			throw new AppError(httpStatus.BAD_REQUEST, "Sender wallet is blocked");
 		}
 
-		if (senderWallet.balance < amount) {
+		if (senderWallet.balance < Number(amount)) {
 			throw new AppError(
 				httpStatus.BAD_REQUEST,
 				"Insufficient balance in sender wallet"
@@ -131,7 +145,7 @@ const sendMoney = async (
 		}
 
 		const recipientWallet = await WalletModel.findOne({
-			userId: recipientId,
+			userId: user._id,
 		}).session(session);
 
 		if (!recipientWallet) {
@@ -152,10 +166,10 @@ const sendMoney = async (
 				{
 					type: ITransactionType.SEND_MONEY,
 					amount,
-					initiatedBy: sender._id,
-					initiatedByRole: sender.type,
-					receiverId: recipientId,
-					receiverRole: recipientWallet.type,
+					initiatedBy: sender.userId,
+					initiatedByRole: sender.role,
+					receiverId: user._id,
+					receiverRole: user.role,
 					fromWalletId: senderWallet._id,
 					toWalletId: recipientWallet._id,
 				},
@@ -167,29 +181,41 @@ const sendMoney = async (
 		return null;
 	} catch (error) {
 		await session.abortTransaction();
-		throw new AppError(
-			httpStatus.INTERNAL_SERVER_ERROR,
-			"Failed to send money"
-		);
+		if (error instanceof AppError) {
+			throw error;
+		}
+
+		if (error instanceof mongoose.Error.ValidationError) {
+			throw error;
+		}
 	} finally {
 		session.endSession();
 	}
 };
 
-const cashIn = async (
-	agent: JwtPayload,
-	recipientId: string,
-	amount: number
-) => {
-	if (agent._id === recipientId) {
+const cashIn = async (agent: JwtPayload, phone: string, amount: number) => {
+	const recipient = await UserModel.findOne({ phone });
+	if (!recipient) {
+		throw new AppError(httpStatus.NOT_FOUND, "Recipient account not found");
+	}
+
+	if (recipient.isDeleted) {
+		throw new AppError(httpStatus.NOT_FOUND, "Recipient account is deleted");
+	}
+
+	if (agent.userId === recipient._id.toString()) {
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
 			"You cannot cash in to yourself"
 		);
 	}
 
-	if (agent.type !== IWalletType.AGENT) {
+	if (agent.role !== Role.AGENT) {
 		throw new AppError(httpStatus.FORBIDDEN, "Only agents can cash in");
+	}
+
+	if (recipient.role !== Role.USER) {
+		throw new AppError(httpStatus.FORBIDDEN, "Only users can cash in");
 	}
 
 	const session = await mongoose.startSession();
@@ -197,8 +223,7 @@ const cashIn = async (
 
 	try {
 		const agentWallet = await WalletModel.findOne({
-			userId: agent._id,
-			type: IWalletType.AGENT,
+			userId: agent.userId,
 		}).session(session);
 
 		if (!agentWallet) {
@@ -209,7 +234,7 @@ const cashIn = async (
 			throw new AppError(httpStatus.BAD_REQUEST, "Agent wallet is blocked");
 		}
 
-		if (agentWallet.balance < amount) {
+		if (agentWallet.balance < Number(amount)) {
 			throw new AppError(
 				httpStatus.BAD_REQUEST,
 				"Insufficient balance in agent wallet"
@@ -217,7 +242,7 @@ const cashIn = async (
 		}
 
 		const recipientWallet = await WalletModel.findOne({
-			userId: recipientId,
+			userId: recipient._id,
 		}).session(session);
 
 		if (!recipientWallet) {
@@ -238,10 +263,10 @@ const cashIn = async (
 				{
 					type: ITransactionType.CASH_IN,
 					amount,
-					initiatedBy: agent._id,
-					initiatedByRole: agent.type,
-					receiverId: recipientId,
-					receiverRole: recipientWallet.type,
+					initiatedBy: agent.userId,
+					initiatedByRole: agent.role,
+					receiverId: recipient._id,
+					receiverRole: recipient.role,
 					fromWalletId: agentWallet._id,
 					toWalletId: recipientWallet._id,
 				},
@@ -253,30 +278,52 @@ const cashIn = async (
 		return null;
 	} catch (error) {
 		await session.abortTransaction();
-		throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to cash in");
+		if (error instanceof AppError) {
+			throw error;
+		}
+
+		if (error instanceof mongoose.Error.ValidationError) {
+			throw error;
+		}
 	} finally {
 		session.endSession();
 	}
 };
 
-const cashOut = async (user: JwtPayload, agentId: string, amount: number) => {
-	if (user._id === agentId) {
+const cashOut = async (user: JwtPayload, phone: string, amount: number) => {
+	const agent = await UserModel.findOne({ phone });
+
+	if (!agent) {
+		throw new AppError(httpStatus.NOT_FOUND, "agent account not found");
+	}
+
+	if (agent.isDeleted) {
+		throw new AppError(httpStatus.NOT_FOUND, "agent account is deleted");
+	}
+
+	if (user.userId === agent._id.toString()) {
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
 			"You cannot cash out to yourself"
 		);
 	}
 
-	if (user.type !== IWalletType.USER) {
+	if (user.role !== Role.USER) {
 		throw new AppError(httpStatus.FORBIDDEN, "Only users can cash out");
+	}
+
+	if (agent.role !== Role.AGENT) {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"User cannot cash out to another user"
+		);
 	}
 	const session = await mongoose.startSession();
 	session.startTransaction();
 
 	try {
 		const userWallet = await WalletModel.findOne({
-			userId: user._id,
-			type: IWalletType.USER,
+			userId: user.userId,
 		}).session(session);
 
 		if (!userWallet) {
@@ -287,7 +334,7 @@ const cashOut = async (user: JwtPayload, agentId: string, amount: number) => {
 			throw new AppError(httpStatus.BAD_REQUEST, "User wallet is blocked");
 		}
 
-		if (userWallet.balance < amount) {
+		if (userWallet.balance < Number(amount)) {
 			throw new AppError(
 				httpStatus.BAD_REQUEST,
 				"Insufficient balance in user wallet"
@@ -295,8 +342,7 @@ const cashOut = async (user: JwtPayload, agentId: string, amount: number) => {
 		}
 
 		const agentWallet = await WalletModel.findOne({
-			userId: agentId,
-			type: IWalletType.AGENT,
+			userId: agent._id,
 		}).session(session);
 
 		if (!agentWallet) {
@@ -317,10 +363,10 @@ const cashOut = async (user: JwtPayload, agentId: string, amount: number) => {
 				{
 					type: ITransactionType.CASH_OUT,
 					amount,
-					initiatedBy: user._id,
-					initiatedByRole: user.type,
-					receiverId: agentId,
-					receiverRole: agentWallet.type,
+					initiatedBy: user.userId,
+					initiatedByRole: user.role,
+					receiverId: agent._id,
+					receiverRole: agent.role,
 					fromWalletId: userWallet._id,
 					toWalletId: agentWallet._id,
 				},
@@ -332,7 +378,13 @@ const cashOut = async (user: JwtPayload, agentId: string, amount: number) => {
 		return null;
 	} catch (error) {
 		await session.abortTransaction();
-		throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to cash out");
+		if (error instanceof AppError) {
+			throw error;
+		}
+
+		if (error instanceof mongoose.Error.ValidationError) {
+			throw error;
+		}
 	} finally {
 		session.endSession();
 	}
@@ -352,7 +404,7 @@ const getAllWallets = async () => {
 
 const getMyWallet = async (user: JwtPayload) => {
 	const wallet = await WalletModel.findOne({
-		userId: user._id,
+		userId: user.userId,
 	});
 
 	if (!wallet) {

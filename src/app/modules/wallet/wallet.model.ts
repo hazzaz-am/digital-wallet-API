@@ -1,16 +1,20 @@
 import { model, Schema } from "mongoose";
 import { IWallet, IWalletStatus, IWalletType } from "./wallet.interface";
+import { Role } from "../user/user.interface";
 
 const walletSchema = new Schema<IWallet>(
 	{
 		userId: { type: Schema.Types.ObjectId, ref: "UserModel", required: true },
 		type: {
 			type: String,
-			enum: Object.values(IWalletType),
-			required: true,
+			enum: Object.values(Role),
 		},
-		status: { type: String, enum: IWalletStatus, required: true },
-		balance: { type: Number, required: true, default: 50 },
+		status: {
+			type: String,
+			enum: IWalletStatus,
+			default: IWalletStatus.ACTIVE,
+		},
+		balance: { type: Number, default: 50 },
 		currency: { type: String, default: "BDT" },
 	},
 	{

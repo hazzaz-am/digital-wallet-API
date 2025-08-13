@@ -1,12 +1,8 @@
 import z from "zod";
-import { IWalletStatus, IWalletType } from "./wallet.interface";
 
 export const createWalletZodSchema = z.object({
 	userId: z.string({
 		error: "User ID must be a string",
-	}),
-	type: z.enum(Object.values(IWalletType), {
-		error: "Type must be one of USER, AGENT, SYSTEM",
 	}),
 });
 
@@ -20,16 +16,31 @@ export const topUpWalletZodSchema = z.object({
 });
 
 export const sendMoneyZodSchema = z.object({
-	recipientId: z.string().min(1, "Recipient is required"),
+	phone: z
+		.string({ error: "Phone Number must be string" })
+		.regex(/^(?:\+8801\d{9}|01\d{9})$/, {
+			error:
+				"Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+		}),
 	amount: z.number().positive("Amount must be greater than zero"),
 });
 
 export const cashInZodSchema = z.object({
-	recipientId: z.string().min(1, "Recipient is required"),
+	phone: z
+		.string({ error: "Phone Number must be string" })
+		.regex(/^(?:\+8801\d{9}|01\d{9})$/, {
+			error:
+				"Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+		}),
 	amount: z.number().positive("Amount must be greater than zero"),
 });
 
 export const cashOutZodSchema = z.object({
-	    agentId: z.string().min(1, "Agent is required"),
-    amount: z.number().positive("Amount must be greater than zero"),
+	phone: z
+		.string({ error: "Phone Number must be string" })
+		.regex(/^(?:\+8801\d{9}|01\d{9})$/, {
+			error:
+				"Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+		}),
+	amount: z.number().positive("Amount must be greater than zero"),
 });

@@ -9,7 +9,7 @@ export enum ITransactionType {
 }
 
 export interface ITransaction {
-	_id?: string;
+	_id?: Types.ObjectId;
 	type: ITransactionType;
 	amount: number;
 	initiatedBy: Types.ObjectId;
