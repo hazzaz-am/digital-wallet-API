@@ -17,7 +17,7 @@ const getAllTransactions = async () => {
 };
 
 const getMyTransactions = async (payload: JwtPayload) => {
-	const user = await UserModel.findById(payload._id);
+	const user = await UserModel.findById(payload.userId);
 
 	if (!user) {
 		throw new AppError(httpStatus.NOT_FOUND, "User not found");
@@ -47,7 +47,7 @@ const getSingleTransaction = async (
 	payload: JwtPayload,
 	transactionId: string
 ) => {
-	const user = await UserModel.findById(payload._id);
+	const user = await UserModel.findById(payload.userId);
 
 	if (!user) {
 		throw new AppError(httpStatus.NOT_FOUND, "User not found");
@@ -59,7 +59,6 @@ const getSingleTransaction = async (
 
 	const transaction = await TransactionModel.findOne({
 		_id: transactionId,
-		$or: [{ initiatedBy: user._id }, { receiverId: user._id }],
 	});
 
 	if (!transaction) {

@@ -1,5 +1,5 @@
 import AppError from "../../helpers/appError";
-import { IAgentData, IApprovalStatus, IUser, Role } from "./user.interface";
+import { IUser, Role } from "./user.interface";
 import { UserModel } from "./user.model";
 import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";

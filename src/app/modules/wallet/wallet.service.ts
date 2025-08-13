@@ -44,6 +44,16 @@ const createWallet = async (
 
 const topUpWallet = async (payload: ITopUpWallet, decodedToken: JwtPayload) => {
 	const { walletId, amount } = payload;
+	const user = await UserModel.findById(decodedToken.userId);
+
+	if (user?.role === Role.AGENT) {
+		if (user.agentData?.approvalStatus !== "APPROVED") {
+			throw new AppError(
+				httpStatus.FORBIDDEN,
+				"Agent is not approved to top up wallet"
+			);
+		}
+	}
 
 	const session = await mongoose.startSession();
 	session.startTransaction();
@@ -95,6 +105,16 @@ const topUpWallet = async (payload: ITopUpWallet, decodedToken: JwtPayload) => {
 
 const sendMoney = async (sender: JwtPayload, phone: string, amount: number) => {
 	const user = await UserModel.findOne({ phone });
+	const senderData = await UserModel.findById(sender.userId);
+
+	if (senderData?.role === Role.AGENT) {
+		if (senderData.agentData?.approvalStatus !== "APPROVED") {
+			throw new AppError(
+				httpStatus.FORBIDDEN,
+				"Agent is not approved to send money"
+			);
+		}
+	}
 
 	if (!user) {
 		throw new AppError(
@@ -195,6 +215,15 @@ const sendMoney = async (sender: JwtPayload, phone: string, amount: number) => {
 
 const cashIn = async (agent: JwtPayload, phone: string, amount: number) => {
 	const recipient = await UserModel.findOne({ phone });
+	const agentPayload = await UserModel.findById(agent.userId);
+
+	if (agentPayload?.agentData?.approvalStatus !== "APPROVED") {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Agent is not approved to cash in"
+		);
+	}
+
 	if (!recipient) {
 		throw new AppError(httpStatus.NOT_FOUND, "Recipient account not found");
 	}
@@ -295,6 +324,13 @@ const cashOut = async (user: JwtPayload, phone: string, amount: number) => {
 
 	if (!agent) {
 		throw new AppError(httpStatus.NOT_FOUND, "agent account not found");
+	}
+
+	if (agent.agentData?.approvalStatus !== "APPROVED") {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Agent is not approved to cash out"
+		);
 	}
 
 	if (agent.isDeleted) {

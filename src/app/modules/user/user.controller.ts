@@ -4,7 +4,6 @@ import { UserService } from "./user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import AppError from "../../helpers/appError";
-import { Role } from "./user.interface";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
 	const user = await UserService.createUser(req.body);

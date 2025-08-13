@@ -19,7 +19,7 @@ router.get(
 
 router.get(
 	"/:id",
-	checkAuthorization(...Object.values([Role.USER, Role.AGENT])),
+	checkAuthorization(...Object.values(Role)),
 	TransactionController.getSingleTransaction
 );
 
