@@ -1,6 +1,5 @@
 import httpStatus from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
-import { Types } from "mongoose";
 import AppError from "../../helpers/appError";
 import { UserModel } from "../user/user.model";
 import { TransactionModel } from "./transaction.model";

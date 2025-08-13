@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IWallet, IWalletStatus, IWalletType } from "./wallet.interface";
+import { IWallet, IWalletStatus } from "./wallet.interface";
 import { Role } from "../user/user.interface";
 
 const walletSchema = new Schema<IWallet>(

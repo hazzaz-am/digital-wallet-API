@@ -34,11 +34,11 @@ passport.use(
 	)
 );
 
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: any, done: any) => {
   done(null, user._id);
 });
 
-passport.deserializeUser(async (id: string, done) => {
+passport.deserializeUser(async (id: string, done: any) => {
   try {
     const user = await UserModel.findById(id);
     done(null, user);

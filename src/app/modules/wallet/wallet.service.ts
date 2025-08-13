@@ -1,6 +1,6 @@
 import AppError from "../../helpers/appError";
 import { UserModel } from "../user/user.model";
-import { IWallet, IWalletStatus, IWalletType } from "./wallet.interface";
+import { IWallet, IWalletStatus } from "./wallet.interface";
 import httpStatus from "http-status-codes";
 import { WalletModel } from "./wallet.model";
 import mongoose, { Types } from "mongoose";
@@ -94,10 +94,13 @@ const topUpWallet = async (payload: ITopUpWallet, decodedToken: JwtPayload) => {
 		return wallet;
 	} catch (error) {
 		await session.abortTransaction();
-		throw new AppError(
-			httpStatus.INTERNAL_SERVER_ERROR,
-			"Failed to top up wallet"
-		);
+		if (error instanceof AppError) {
+			throw error;
+		}
+
+		if (error instanceof mongoose.Error.ValidationError) {
+			throw error;
+		}
 	} finally {
 		session.endSession();
 	}

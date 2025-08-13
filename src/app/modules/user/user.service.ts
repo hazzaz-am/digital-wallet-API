@@ -29,7 +29,7 @@ const createUser = async (payload: Partial<IUser>) => {
 		...rest,
 	});
 
-	let updatedUser = user.toObject();
+	const updatedUser = user.toObject();
 
 	if (updatedUser.role === Role.AGENT && updatedUser.agentData) {
 		updatedUser.agentData.commissionRate = 0.2;

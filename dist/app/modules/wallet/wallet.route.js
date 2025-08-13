@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WalletRoutes = void 0;
+const express_1 = require("express");
+const wallet_controller_1 = require("./wallet.controller");
+const zodSchemaValidation_1 = require("../../middlewares/zodSchemaValidation");
+const wallet_validation_1 = require("./wallet.validation");
+const checkAuthorization_1 = require("../../middlewares/checkAuthorization");
+const user_interface_1 = require("../user/user.interface");
+const router = (0, express_1.Router)();
+router.post("/create-wallet", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.createWalletZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.createWallet);
+router.post("/top-up", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.topUpWalletZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.topUpWallet);
+router.post("/send-money", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.sendMoneyZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values([user_interface_1.Role.USER, user_interface_1.Role.AGENT])), wallet_controller_1.WalletController.sendMoney);
+router.post("/cash-in", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.cashInZodSchema), (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.AGENT), wallet_controller_1.WalletController.cashIn);
+router.post("/cash-out", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.cashOutZodSchema), (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.USER), wallet_controller_1.WalletController.cashOut);
+router.get("/get-wallets", (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.ADMIN), wallet_controller_1.WalletController.getAllWallets);
+router.get("/my-wallet", (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.getMyWallet);
+exports.WalletRoutes = router;
