@@ -18,7 +18,8 @@ const createWallet = async (
 	walletData: Partial<IWallet>,
 	payload: JwtPayload
 ) => {
-	const user = await UserModel.findById(walletData.userId);
+	const user = await UserModel.findById(payload.userId);
+
 	if (!user) {
 		throw new AppError(httpStatus.NOT_FOUND, "User not found");
 	}
@@ -30,11 +31,27 @@ const createWallet = async (
 		);
 	}
 
+	const isWalletExist = await WalletModel.findOne({ userId: user._id });
+
+	if (isWalletExist) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			"Wallet already exists with this user"
+		);
+	}
+
 	if (walletData.userId !== payload.userId) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
 
+	console.log(
+		"Incoming balance:",
+		walletData.balance,
+		typeof walletData.balance
+	);
+
 	const newWallet = await WalletModel.create({
+		balance: walletData.balance,
 		userId: user._id,
 		type: user.role,
 	});
@@ -108,9 +125,13 @@ const topUpWallet = async (payload: ITopUpWallet, decodedToken: JwtPayload) => {
 
 const sendMoney = async (sender: JwtPayload, phone: string, amount: number) => {
 	const user = await UserModel.findOne({ phone });
-	const senderData = await UserModel.findById(sender.userId);
+	const senderData = await UserModel.findOne({ _id: sender.userId });
 
-	if (senderData?.role === Role.AGENT) {
+	if (!senderData) {
+		throw new AppError(httpStatus.NOT_FOUND, "Account not found");
+	}
+
+	if (senderData.role === Role.AGENT) {
 		if (senderData.agentData?.approvalStatus !== "APPROVED") {
 			throw new AppError(
 				httpStatus.FORBIDDEN,
@@ -130,14 +151,14 @@ const sendMoney = async (sender: JwtPayload, phone: string, amount: number) => {
 		throw new AppError(httpStatus.NOT_FOUND, "Account is deleted");
 	}
 
-	if (user.role === Role.AGENT) {
+	if (senderData.role === Role.USER && user.role === Role.AGENT) {
 		throw new AppError(
 			httpStatus.FORBIDDEN,
 			"User cannot send money to agents"
 		);
 	}
 
-	if (sender.userId === user._id.toString()) {
+	if (senderData._id.toString() === user._id.toString()) {
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
 			"You cannot send money to yourself"
@@ -149,7 +170,7 @@ const sendMoney = async (sender: JwtPayload, phone: string, amount: number) => {
 
 	try {
 		const senderWallet = await WalletModel.findOne({
-			userId: sender.userId,
+			userId: senderData._id,
 		}).session(session);
 
 		if (!senderWallet) {
@@ -323,31 +344,33 @@ const cashIn = async (agent: JwtPayload, phone: string, amount: number) => {
 };
 
 const cashOut = async (user: JwtPayload, phone: string, amount: number) => {
+	const senderUser = await UserModel.findById(user.userId);
 	const agent = await UserModel.findOne({ phone });
+
+	if (!senderUser) {
+		throw new AppError(httpStatus.NOT_FOUND, "Sender not found");
+	}
 
 	if (!agent) {
 		throw new AppError(httpStatus.NOT_FOUND, "agent account not found");
 	}
 
-	if (agent.agentData?.approvalStatus !== "APPROVED") {
-		throw new AppError(
-			httpStatus.FORBIDDEN,
-			"Agent is not approved to cash out"
-		);
+	if (agent.role === Role.ADMIN) {
+		throw new AppError(httpStatus.FORBIDDEN, "Admin cannot cash out");
 	}
 
 	if (agent.isDeleted) {
 		throw new AppError(httpStatus.NOT_FOUND, "agent account is deleted");
 	}
 
-	if (user.userId === agent._id.toString()) {
+	if (senderUser._id.toString() === agent._id.toString()) {
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
 			"You cannot cash out to yourself"
 		);
 	}
 
-	if (user.role !== Role.USER) {
+	if (senderUser.role !== Role.USER) {
 		throw new AppError(httpStatus.FORBIDDEN, "Only users can cash out");
 	}
 
@@ -357,12 +380,20 @@ const cashOut = async (user: JwtPayload, phone: string, amount: number) => {
 			"User cannot cash out to another user"
 		);
 	}
+
+	if (agent.agentData?.approvalStatus !== "APPROVED") {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Agent is not approved to cash out"
+		);
+	}
+
 	const session = await mongoose.startSession();
 	session.startTransaction();
 
 	try {
 		const userWallet = await WalletModel.findOne({
-			userId: user.userId,
+			userId: senderUser._id,
 		}).session(session);
 
 		if (!userWallet) {

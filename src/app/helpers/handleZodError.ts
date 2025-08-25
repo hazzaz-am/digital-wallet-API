@@ -13,7 +13,7 @@ export const handleZodError = (err: any): IGenericErrorResponse => {
 
 	return {
 		statusCode: 400,
-		message: "Zod Error",
+		message: "Make sure to provide valid input",
 		errorSources,
 	};
 };

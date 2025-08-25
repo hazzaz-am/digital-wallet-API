@@ -4,6 +4,7 @@ import { UserService } from "./user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import AppError from "../../helpers/appError";
+import { JwtPayload } from "jsonwebtoken";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
 	const user = await UserService.createUser(req.body);
@@ -54,9 +55,22 @@ const getUserById = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const getMyProfile = catchAsync(async (req: Request, res: Response) => {
+	const decodedToken = req.user as JwtPayload;
+	const result = await UserService.getMyProfile(decodedToken.userId);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "Your profile Retrieved Successfully",
+		data: result.data,
+	});
+});
+
 export const UserController = {
 	createUser,
 	updateUser,
 	getAllUsers,
 	getUserById,
+	getMyProfile,
 };

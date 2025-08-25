@@ -119,9 +119,17 @@ const getUserById = async (userId: string) => {
 	return result;
 };
 
+const getMyProfile = async (userId: string) => {
+	const user = await UserModel.findById(userId).select("-password");
+	return {
+		data: user,
+	};
+};
+
 export const UserService = {
 	createUser,
 	updateUser,
 	getUserById,
 	getAllUsers,
+	getMyProfile,
 };

@@ -11,39 +11,32 @@ import { AuthService } from "./auth.service";
 
 const credentialsLogin = catchAsync(
 	async (req: Request, res: Response, next: NextFunction) => {
-		const passportAuthenticateHandler = async (
-			err: any,
-			user: any,
-			info: any
-		) => {
+		passport.authenticate("local", async (err: any, user: any, info: any) => {
 			if (err) {
-				return next(new AppError(401, "Authentication failed"));
+				return next(new AppError(401, err));
 			}
 
 			if (!user) {
 				return next(new AppError(401, info.message));
 			}
 
-			const userTokens = createUserTokens(user);
+			const userTokens = await createUserTokens(user);
 
-			const updatedUser = user.toObject();
-			delete updatedUser["password"];
+			const { password: pass, ...rest } = user.toObject();
 
 			setCookie(res, userTokens);
 
 			sendResponse(res, {
-				statusCode: httpStatus.OK,
-				message: "Log in successful",
 				success: true,
+				statusCode: httpStatus.OK,
+				message: "User Logged In Successfully",
 				data: {
 					accessToken: userTokens.accessToken,
 					refreshToken: userTokens.refreshToken,
-					user: updatedUser,
+					user: rest,
 				},
 			});
-		};
-
-		passport.authenticate("local", passportAuthenticateHandler)(req, res, next);
+		})(req, res, next);
 	}
 );
 

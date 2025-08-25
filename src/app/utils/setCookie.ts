@@ -5,7 +5,7 @@ interface IAuthTokens {
 	refreshToken?: string;
 }
 
-export const setCookie = async (res: Response, tokenInfo: IAuthTokens) => {
+export const setCookie = (res: Response, tokenInfo: IAuthTokens) => {
 	const options = {
 		httpOnly: true,
 		secure: false,

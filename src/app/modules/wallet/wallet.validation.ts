@@ -4,15 +4,18 @@ export const createWalletZodSchema = z.object({
 	userId: z.string({
 		error: "User ID must be a string",
 	}),
+	balance: z.number().optional(),
 });
 
 export const topUpWalletZodSchema = z.object({
 	walletId: z.string({
 		error: "Wallet ID must be a string",
 	}),
-	amount: z.number({
-		error: "Amount must be a number",
-	}),
+	amount: z
+		.number({
+			error: "Amount must be a number",
+		})
+		.min(50, "Amount must be at least 50 BDT"),
 });
 
 export const sendMoneyZodSchema = z.object({

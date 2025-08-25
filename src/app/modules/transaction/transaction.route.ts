@@ -13,7 +13,7 @@ router.get(
 
 router.get(
 	"/my-transactions",
-	checkAuthorization(...Object.values([Role.USER, Role.AGENT])),
+	checkAuthorization(...Object.values(Role)),
 	TransactionController.getMyTransactions
 );
 

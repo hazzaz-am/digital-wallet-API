@@ -20,6 +20,12 @@ router.get(
 );
 
 router.get(
+	"/me",
+	checkAuthorization(...Object.values(Role)),
+	UserController.getMyProfile
+);
+
+router.get(
 	"/:id",
 	checkAuthorization(...Object.values(Role)),
 	UserController.getUserById
