@@ -15,6 +15,26 @@ export class QueryBuilder<T> {
 		for (const field of excludeField) {
 			delete filter[field];
 		}
+
+		if (filter.startDate || filter.endDate) {
+			const dateFilter: Record<string, any> = {};
+
+			if (filter.startDate) {
+				dateFilter.$gte = new Date(filter.startDate);
+			}
+
+			if (filter.endDate) {
+				let end = new Date(filter.endDate);
+				end.setHours(23, 59, 59, 999);
+				dateFilter.$lte = end
+			}
+
+			(filter as any).createdAt = dateFilter;
+
+			delete filter.startDate;
+			delete filter.endDate;
+		}
+
 		this.modelQuery = this.modelQuery.find(filter);
 		return this;
 	}

@@ -20,6 +20,10 @@ const credentialsLogin = catchAsync(
 				return next(new AppError(401, info.message));
 			}
 
+			if (user.isDeleted) {
+				return next(new AppError(401, "User is deleted"));
+			}
+
 			const userTokens = await createUserTokens(user);
 
 			const { password: pass, ...rest } = user.toObject();
