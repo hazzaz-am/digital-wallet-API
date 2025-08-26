@@ -8,6 +8,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { TransactionModel } from "../transaction/transaction.model";
 import { ITransactionType } from "../transaction/transaction.interface";
 import { Role } from "../user/user.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
 
 interface ITopUpWallet {
 	walletId: Types.ObjectId;
@@ -460,15 +461,17 @@ const cashOut = async (user: JwtPayload, phone: string, amount: number) => {
 	}
 };
 
-const getAllWallets = async () => {
-	const wallets = await WalletModel.find();
-	const totalWallets = await WalletModel.countDocuments();
+const getAllWallets = async (query: Record<string, string>) => {
+	const queryBuilder = new QueryBuilder(WalletModel.find(), query);
+	const wallets = await queryBuilder.filter().sort().paginate();
 
+	const [data, meta] = await Promise.all([
+		wallets.build(),
+		queryBuilder.getMeta(),
+	]);
 	return {
-		data: wallets,
-		meta: {
-			total: totalWallets,
-		},
+		data,
+		meta,
 	};
 };
 

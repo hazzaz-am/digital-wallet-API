@@ -5,6 +5,10 @@ import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";
 import { envVars } from "../../config/env";
 import { JwtPayload } from "jsonwebtoken";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import mongoose from "mongoose";
+import { WalletModel } from "../wallet/wallet.model";
+import { IWalletStatus } from "../wallet/wallet.interface";
 
 const createUser = async (payload: Partial<IUser>) => {
 	const { phone, password, ...rest } = payload;
@@ -85,6 +89,14 @@ const updateUser = async (
 		runValidators: true,
 	});
 
+	if (payload.isDeleted === true) {
+		await WalletModel.findOneAndUpdate(
+			{ userId: userId },
+			{ status: IWalletStatus.BLOCKED },
+			{ new: true }
+		);
+	}
+
 	let result;
 	if (updatedUser) {
 		result = updatedUser.toObject();
@@ -94,15 +106,18 @@ const updateUser = async (
 	return result;
 };
 
-const getAllUsers = async () => {
-	const users = await UserModel.find();
-	const totalUsers = await UserModel.countDocuments();
+const getAllUsers = async (query: Record<string, string>) => {
+	const queryBuilder = new QueryBuilder(UserModel.find(), query);
 
+	const users = await queryBuilder.filter().sort().paginate();
+
+	const [data, meta] = await Promise.all([
+		users.build(),
+		queryBuilder.getMeta(),
+	]);
 	return {
-		data: users,
-		meta: {
-			total: totalUsers,
-		},
+		data,
+		meta,
 	};
 };
 

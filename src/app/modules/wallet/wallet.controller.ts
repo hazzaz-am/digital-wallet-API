@@ -21,7 +21,7 @@ const createWallet = catchAsync(async (req: Request, res: Response) => {
 });
 
 const topUpWallet = catchAsync(async (req: Request, res: Response) => {
-	const decodedToken = req.user
+	const decodedToken = req.user;
 
 	if (!decodedToken) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
@@ -84,7 +84,10 @@ const cashOut = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllWallets = catchAsync(async (req: Request, res: Response) => {
-	const result = await WalletService.getAllWallets();
+	const query = req.query;
+	const result = await WalletService.getAllWallets(
+		query as Record<string, string>
+	);
 	sendResponse(res, {
 		success: true,
 		statusCode: httpStatus.OK,
@@ -116,5 +119,5 @@ export const WalletController = {
 	cashIn,
 	cashOut,
 	getAllWallets,
-	getMyWallet
+	getMyWallet,
 };

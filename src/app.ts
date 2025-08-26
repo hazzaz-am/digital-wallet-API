@@ -30,7 +30,6 @@ app.use(
 		credentials: true,
 	})
 );
-
 app.use("/api/v1", router);
 
 app.get("/", (_req: Request, res: Response) => {

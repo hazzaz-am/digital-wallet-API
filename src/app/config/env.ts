@@ -15,10 +15,6 @@ interface EnvConfig {
 	AGENT_COMMISSION_RATE: string;
 	SUPER_ADMIN_PHONE: string;
 	SUPER_ADMIN_PASSWORD: string;
-	TWILLO_ACCOUNT_SID: string;
-	TWILLO_AUTH_TOKEN: string;
-	TWILLO_VERIFY_SERVICE_SID: string;
-	TWILLO_PHONE_NUMBER: string;
 	FRONTEND_URL: string;
 }
 
@@ -36,10 +32,6 @@ const localEnvVariables = (): EnvConfig => {
 		"AGENT_COMMISSION_RATE",
 		"SUPER_ADMIN_PHONE",
 		"SUPER_ADMIN_PASSWORD",
-		"TWILLO_ACCOUNT_SID",
-		"TWILLO_AUTH_TOKEN",
-		"TWILLO_VERIFY_SERVICE_SID",
-		"TWILLO_PHONE_NUMBER",
 		"FRONTEND_URL"
 	];
 
@@ -62,10 +54,6 @@ const localEnvVariables = (): EnvConfig => {
 		AGENT_COMMISSION_RATE: process.env.AGENT_COMMISSION_RATE as string,
 		SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE as string,
 		SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD as string,
-		TWILLO_ACCOUNT_SID: process.env.TWILLO_ACCOUNT_SID as string,
-		TWILLO_AUTH_TOKEN: process.env.TWILLO_AUTH_TOKEN as string,
-		TWILLO_VERIFY_SERVICE_SID: process.env.TWILLO_VERIFY_SERVICE_SID as string,
-		TWILLO_PHONE_NUMBER: process.env.TWILLO_PHONE_NUMBER as string,
 		FRONTEND_URL: process.env.FRONTEND_URL as string
 	};
 };
