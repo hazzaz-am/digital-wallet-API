@@ -12,6 +12,12 @@ router.get(
 );
 
 router.get(
+	"/stats",
+	checkAuthorization(...Object.values(Role)),
+	TransactionController.getTransactionStats
+);
+
+router.get(
 	"/my-transactions",
 	checkAuthorization(...Object.values(Role)),
 	TransactionController.getMyTransactions

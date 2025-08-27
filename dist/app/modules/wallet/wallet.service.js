@@ -382,10 +382,24 @@ const getMyWallet = (user) => __awaiter(void 0, void 0, void 0, function* () {
     }
     return wallet;
 });
+const deleteWallet = (walletId, user) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!user) {
+        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Unauthorized access");
+    }
+    const wallet = yield wallet_model_1.WalletModel.findOneAndDelete({
+        _id: walletId,
+        userId: user.userId,
+    });
+    if (!wallet) {
+        throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Wallet not found");
+    }
+    return wallet;
+});
 exports.WalletService = {
     createWallet,
     topUpWallet,
     cashOut,
+    deleteWallet,
     sendMoney,
     cashIn,
     getAllWallets,

@@ -523,10 +523,28 @@ const getMyWallet = async (user: JwtPayload) => {
 	return wallet;
 };
 
+const deleteWallet = async (walletId: string, user: JwtPayload) => {
+	if (!user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+
+	const wallet = await WalletModel.findOneAndDelete({
+		_id: walletId,
+		userId: user.userId,
+	});
+
+	if (!wallet) {
+		throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+	}
+
+	return wallet;
+};
+
 export const WalletService = {
 	createWallet,
 	topUpWallet,
 	cashOut,
+	deleteWallet,
 	sendMoney,
 	cashIn,
 	getAllWallets,

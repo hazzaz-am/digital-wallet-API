@@ -7,6 +7,7 @@ const transaction_controller_1 = require("./transaction.controller");
 const checkAuthorization_1 = require("../../middlewares/checkAuthorization");
 const router = (0, express_1.Router)();
 router.get("/get-all-transactions", (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.ADMIN), transaction_controller_1.TransactionController.getAllTransactions);
+router.get("/stats", (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), transaction_controller_1.TransactionController.getTransactionStats);
 router.get("/my-transactions", (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), transaction_controller_1.TransactionController.getMyTransactions);
 router.get("/:id", (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), transaction_controller_1.TransactionController.getSingleTransaction);
 exports.TransactionRoutes = router;

@@ -89,13 +89,13 @@ const getNewAccessToken = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(v
 const logout = (0, catchAsync_1.catchAsync)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.clearCookie("accessToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
     });
     res.clearCookie("refreshToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
     });
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: http_status_codes_1.default.OK,

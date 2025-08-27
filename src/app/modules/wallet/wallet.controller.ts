@@ -25,7 +25,11 @@ const updateWallet = catchAsync(async (req: Request, res: Response) => {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
 
-	const wallet = await WalletService.updateWallet(req.body, req.params.id, req.user);
+	const wallet = await WalletService.updateWallet(
+		req.body,
+		req.params.id,
+		req.user
+	);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -34,7 +38,6 @@ const updateWallet = catchAsync(async (req: Request, res: Response) => {
 		data: wallet,
 	});
 });
-
 
 const topUpWallet = catchAsync(async (req: Request, res: Response) => {
 	const decodedToken = req.user;
@@ -128,6 +131,22 @@ const getMyWallet = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const deleteWallet = catchAsync(async (req: Request, res: Response) => {
+	if (!req.user) {
+		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
+	}
+
+	const walletId = req.params.id;
+	await WalletService.deleteWallet(walletId, req.user);
+
+	sendResponse(res, {
+		success: true,
+		statusCode: httpStatus.OK,
+		message: "Wallet deleted successfully",
+		data: null,
+	});
+});
+
 export const WalletController = {
 	createWallet,
 	topUpWallet,
@@ -136,5 +155,6 @@ export const WalletController = {
 	cashOut,
 	getAllWallets,
 	getMyWallet,
-	updateWallet
+	updateWallet,
+	deleteWallet,
 };

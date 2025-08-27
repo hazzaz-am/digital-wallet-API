@@ -62,6 +62,12 @@ router.get(
 	WalletController.getAllWallets
 );
 
+router.delete(
+	"/:id",
+	checkAuthorization(...Object.values(Role)),
+	WalletController.deleteWallet
+);
+
 router.get(
 	"/my-wallet",
 	checkAuthorization(...Object.values(Role)),

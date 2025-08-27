@@ -120,6 +120,19 @@ const getMyWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
         data: wallet,
     });
 }));
+const deleteWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user) {
+        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Unauthorized access");
+    }
+    const walletId = req.params.id;
+    yield wallet_service_1.WalletService.deleteWallet(walletId, req.user);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Wallet deleted successfully",
+        data: null,
+    });
+}));
 exports.WalletController = {
     createWallet,
     topUpWallet,
@@ -128,5 +141,6 @@ exports.WalletController = {
     cashOut,
     getAllWallets,
     getMyWallet,
-    updateWallet
+    updateWallet,
+    deleteWallet,
 };

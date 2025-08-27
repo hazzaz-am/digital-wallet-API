@@ -15,5 +15,6 @@ router.post("/send-money", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet
 router.post("/cash-in", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.cashInZodSchema), (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.AGENT), wallet_controller_1.WalletController.cashIn);
 router.post("/cash-out", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.cashOutZodSchema), (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.USER), wallet_controller_1.WalletController.cashOut);
 router.get("/get-wallets", (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.ADMIN), wallet_controller_1.WalletController.getAllWallets);
+router.delete("/:id", (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.deleteWallet);
 router.get("/my-wallet", (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.getMyWallet);
 exports.WalletRoutes = router;
