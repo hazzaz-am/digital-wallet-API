@@ -81,14 +81,14 @@ const getNewAccessToken = catchAsync(async (req: Request, res: Response) => {
 const logout = catchAsync(async (_req: Request, res: Response) => {
 	res.clearCookie("accessToken", {
 		httpOnly: true,
-		secure: false,
-		sameSite: "lax",
+		secure: true,
+		sameSite: "none",
 	});
 
 	res.clearCookie("refreshToken", {
 		httpOnly: true,
-		secure: false,
-		sameSite: "lax",
+		secure: true,
+		sameSite: "none",
 	});
 
 	sendResponse(res, {

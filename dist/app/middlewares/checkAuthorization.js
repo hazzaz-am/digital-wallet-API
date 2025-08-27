@@ -20,7 +20,7 @@ const env_1 = require("../config/env");
 const user_model_1 = require("../modules/user/user.model");
 const checkAuthorization = (...authRoles) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const accessToken = req.headers.authorization;
+        const accessToken = req.headers.authorization || req.cookies.accessToken;
         if (!accessToken) {
             throw new appError_1.default(http_status_codes_1.default.UNAUTHORIZED, "User not authorized");
         }

@@ -9,7 +9,7 @@ const handleZodError = (err) => {
     }));
     return {
         statusCode: 400,
-        message: "Zod Error",
+        message: "Make sure to provide valid input",
         errorSources,
     };
 };

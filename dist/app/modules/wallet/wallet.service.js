@@ -22,22 +22,45 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const transaction_model_1 = require("../transaction/transaction.model");
 const transaction_interface_1 = require("../transaction/transaction.interface");
 const user_interface_1 = require("../user/user.interface");
+const QueryBuilder_1 = require("../../utils/QueryBuilder");
 const createWallet = (walletData, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.UserModel.findById(walletData.userId);
+    const user = yield user_model_1.UserModel.findById(payload.userId);
     if (!user) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found");
     }
     if (user.isDeleted) {
         throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is deleted, cannot create wallet");
     }
+    const isWalletExist = yield wallet_model_1.WalletModel.findOne({ userId: user._id });
+    if (isWalletExist) {
+        throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "Wallet already exists with this user");
+    }
     if (walletData.userId !== payload.userId) {
         throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Unauthorized access");
     }
+    console.log("Incoming balance:", walletData.balance, typeof walletData.balance);
     const newWallet = yield wallet_model_1.WalletModel.create({
+        balance: walletData.balance,
         userId: user._id,
         type: user.role,
     });
     return newWallet;
+});
+const updateWallet = (payload, walletId, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
+    const wallet = yield wallet_model_1.WalletModel.findById(walletId);
+    if (!wallet) {
+        throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Wallet not found");
+    }
+    if (payload.status) {
+        if (decodedToken.role === user_interface_1.Role.USER || decodedToken.role === user_interface_1.Role.AGENT) {
+            throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "You are not authorized");
+        }
+    }
+    const updatedWallet = yield wallet_model_1.WalletModel.findByIdAndUpdate(walletId, payload, {
+        new: true,
+        runValidators: true,
+    });
+    return updatedWallet;
 });
 const topUpWallet = (payload, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -92,8 +115,11 @@ const topUpWallet = (payload, decodedToken) => __awaiter(void 0, void 0, void 0,
 const sendMoney = (sender, phone, amount) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const user = yield user_model_1.UserModel.findOne({ phone });
-    const senderData = yield user_model_1.UserModel.findById(sender.userId);
-    if ((senderData === null || senderData === void 0 ? void 0 : senderData.role) === user_interface_1.Role.AGENT) {
+    const senderData = yield user_model_1.UserModel.findOne({ _id: sender.userId });
+    if (!senderData) {
+        throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Account not found");
+    }
+    if (senderData.role === user_interface_1.Role.AGENT) {
         if (((_a = senderData.agentData) === null || _a === void 0 ? void 0 : _a.approvalStatus) !== "APPROVED") {
             throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Agent is not approved to send money");
         }
@@ -104,17 +130,17 @@ const sendMoney = (sender, phone, amount) => __awaiter(void 0, void 0, void 0, f
     if (user.isDeleted) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Account is deleted");
     }
-    if (user.role === user_interface_1.Role.AGENT) {
+    if (senderData.role === user_interface_1.Role.USER && user.role === user_interface_1.Role.AGENT) {
         throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "User cannot send money to agents");
     }
-    if (sender.userId === user._id.toString()) {
+    if (senderData._id.toString() === user._id.toString()) {
         throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "You cannot send money to yourself");
     }
     const session = yield mongoose_1.default.startSession();
     session.startTransaction();
     try {
         const senderWallet = yield wallet_model_1.WalletModel.findOne({
-            userId: sender.userId,
+            userId: senderData._id,
         }).session(session);
         if (!senderWallet) {
             throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Sender wallet not found");
@@ -170,6 +196,9 @@ const cashIn = (agent, phone, amount) => __awaiter(void 0, void 0, void 0, funct
     var _a;
     const recipient = yield user_model_1.UserModel.findOne({ phone });
     const agentPayload = yield user_model_1.UserModel.findById(agent.userId);
+    if (!agentPayload) {
+        throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Agent not found");
+    }
     if (((_a = agentPayload === null || agentPayload === void 0 ? void 0 : agentPayload.agentData) === null || _a === void 0 ? void 0 : _a.approvalStatus) !== "APPROVED") {
         throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Agent is not approved to cash in");
     }
@@ -179,20 +208,20 @@ const cashIn = (agent, phone, amount) => __awaiter(void 0, void 0, void 0, funct
     if (recipient.isDeleted) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Recipient account is deleted");
     }
-    if (agent.userId === recipient._id.toString()) {
+    if (agentPayload._id.toString() === recipient._id.toString()) {
         throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "You cannot cash in to yourself");
     }
-    if (agent.role !== user_interface_1.Role.AGENT) {
+    if (agentPayload.role !== user_interface_1.Role.AGENT) {
         throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Only agents can cash in");
     }
     if (recipient.role !== user_interface_1.Role.USER) {
-        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Only users can cash in");
+        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Agent can only cash in to user accounts");
     }
     const session = yield mongoose_1.default.startSession();
     session.startTransaction();
     try {
         const agentWallet = yield wallet_model_1.WalletModel.findOne({
-            userId: agent.userId,
+            userId: agentPayload._id,
         }).session(session);
         if (!agentWallet) {
             throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Agent wallet not found");
@@ -246,30 +275,37 @@ const cashIn = (agent, phone, amount) => __awaiter(void 0, void 0, void 0, funct
 });
 const cashOut = (user, phone, amount) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
+    const senderUser = yield user_model_1.UserModel.findById(user.userId);
     const agent = yield user_model_1.UserModel.findOne({ phone });
+    if (!senderUser) {
+        throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Sender not found");
+    }
     if (!agent) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "agent account not found");
     }
-    if (((_a = agent.agentData) === null || _a === void 0 ? void 0 : _a.approvalStatus) !== "APPROVED") {
-        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Agent is not approved to cash out");
+    if (agent.role === user_interface_1.Role.ADMIN) {
+        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Admin cannot cash out");
     }
     if (agent.isDeleted) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "agent account is deleted");
     }
-    if (user.userId === agent._id.toString()) {
+    if (senderUser._id.toString() === agent._id.toString()) {
         throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "You cannot cash out to yourself");
     }
-    if (user.role !== user_interface_1.Role.USER) {
+    if (senderUser.role !== user_interface_1.Role.USER) {
         throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Only users can cash out");
     }
     if (agent.role !== user_interface_1.Role.AGENT) {
         throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "User cannot cash out to another user");
     }
+    if (((_a = agent.agentData) === null || _a === void 0 ? void 0 : _a.approvalStatus) !== "APPROVED") {
+        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Agent is not approved to cash out");
+    }
     const session = yield mongoose_1.default.startSession();
     session.startTransaction();
     try {
         const userWallet = yield wallet_model_1.WalletModel.findOne({
-            userId: user.userId,
+            userId: senderUser._id,
         }).session(session);
         if (!userWallet) {
             throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "User wallet not found");
@@ -321,14 +357,20 @@ const cashOut = (user, phone, amount) => __awaiter(void 0, void 0, void 0, funct
         session.endSession();
     }
 });
-const getAllWallets = () => __awaiter(void 0, void 0, void 0, function* () {
-    const wallets = yield wallet_model_1.WalletModel.find();
-    const totalWallets = yield wallet_model_1.WalletModel.countDocuments();
+const getAllWallets = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    const queryBuilder = new QueryBuilder_1.QueryBuilder(wallet_model_1.WalletModel.find(), query);
+    const wallets = yield queryBuilder
+        .filter()
+        .sort()
+        .paginate()
+        .search(["status", "type"]);
+    const [data, meta] = yield Promise.all([
+        wallets.build(),
+        queryBuilder.getMeta(),
+    ]);
     return {
-        data: wallets,
-        meta: {
-            total: totalWallets,
-        },
+        data,
+        meta,
     };
 });
 const getMyWallet = (user) => __awaiter(void 0, void 0, void 0, function* () {
@@ -348,4 +390,5 @@ exports.WalletService = {
     cashIn,
     getAllWallets,
     getMyWallet,
+    updateWallet,
 };

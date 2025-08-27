@@ -19,7 +19,8 @@ const localEnvVariables = () => {
         "EXPRESS_SESSION_SECRET",
         "AGENT_COMMISSION_RATE",
         "SUPER_ADMIN_PHONE",
-        "SUPER_ADMIN_PASSWORD"
+        "SUPER_ADMIN_PASSWORD",
+        "FRONTEND_URL"
     ];
     requiredEnvVariables.forEach((key) => {
         if (!process.env[key]) {
@@ -38,7 +39,8 @@ const localEnvVariables = () => {
         EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET,
         AGENT_COMMISSION_RATE: process.env.AGENT_COMMISSION_RATE,
         SUPER_ADMIN_PHONE: process.env.SUPER_ADMIN_PHONE,
-        SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD
+        SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD,
+        FRONTEND_URL: process.env.FRONTEND_URL
     };
 };
 exports.envVars = localEnvVariables();

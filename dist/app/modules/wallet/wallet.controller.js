@@ -30,6 +30,18 @@ const createWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0
         data: newWallet,
     });
 }));
+const updateWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user) {
+        throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "Unauthorized access");
+    }
+    const wallet = yield wallet_service_1.WalletService.updateWallet(req.body, req.params.id, req.user);
+    (0, sendResponse_1.sendResponse)(res, {
+        statusCode: http_status_codes_1.default.OK,
+        success: true,
+        message: "Wallet updated successfully",
+        data: wallet,
+    });
+}));
 const topUpWallet = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const decodedToken = req.user;
     if (!decodedToken) {
@@ -86,7 +98,8 @@ const cashOut = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, voi
     });
 }));
 const getAllWallets = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield wallet_service_1.WalletService.getAllWallets();
+    const query = req.query;
+    const result = yield wallet_service_1.WalletService.getAllWallets(query);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
@@ -114,5 +127,6 @@ exports.WalletController = {
     cashIn,
     cashOut,
     getAllWallets,
-    getMyWallet
+    getMyWallet,
+    updateWallet
 };

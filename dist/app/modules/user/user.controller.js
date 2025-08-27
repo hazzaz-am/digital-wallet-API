@@ -40,7 +40,7 @@ const updateUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     });
 }));
 const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_service_1.UserService.getAllUsers();
+    const result = yield user_service_1.UserService.getAllUsers(req.query);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: http_status_codes_1.default.OK,
         success: true,
@@ -50,12 +50,22 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
     });
 }));
 const getUserById = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_service_1.UserService.getUserById(req.params.id);
+    const result = yield user_service_1.UserService.getUserById(req.params.id);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: http_status_codes_1.default.OK,
         success: true,
         message: "User retrieved successfully",
-        data: user,
+        data: Object.assign(Object.assign({}, result.data), result.meta),
+    });
+}));
+const getMyProfile = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const decodedToken = req.user;
+    const result = yield user_service_1.UserService.getMyProfile(decodedToken.userId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Your profile Retrieved Successfully",
+        data: result.data,
     });
 }));
 exports.UserController = {
@@ -63,4 +73,5 @@ exports.UserController = {
     updateUser,
     getAllUsers,
     getUserById,
+    getMyProfile,
 };

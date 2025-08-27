@@ -38,6 +38,12 @@ exports.updateUserZodSchema = zod_1.default.object({
         .min(2, { error: "Name must be at least 2 characters long." })
         .max(50, { error: "Name cannot exceed 50 characters." })
         .optional(),
+    phone: zod_1.default
+        .string({ error: "Phone Number must be string" })
+        .regex(/^\+8801[3-9]\d{8}$/, {
+        error: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+    })
+        .optional(),
     password: zod_1.default
         .string({ error: "Password must be string" })
         .min(8, { error: "Password must be at least 8 characters long." })

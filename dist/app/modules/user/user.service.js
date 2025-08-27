@@ -30,6 +30,10 @@ const user_model_1 = require("./user.model");
 const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const env_1 = require("../../config/env");
+const QueryBuilder_1 = require("../../utils/QueryBuilder");
+const wallet_model_1 = require("../wallet/wallet.model");
+const wallet_interface_1 = require("../wallet/wallet.interface");
+const transaction_model_1 = require("../transaction/transaction.model");
 const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password } = payload, rest = __rest(payload, ["phone", "password"]);
     const isPhoneExist = yield user_model_1.UserModel.findOne({ phone: phone });
@@ -50,8 +54,10 @@ const updateUser = (payload, userId, decodedToken) => __awaiter(void 0, void 0, 
     if (!user) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found");
     }
-    if (user.isDeleted) {
-        throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is deleted, cannot update");
+    if (payload.isDeleted === undefined) {
+        if (user.isDeleted) {
+            throw new appError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is deleted, cannot update");
+        }
     }
     if (payload.password) {
         payload.password = yield bcryptjs_1.default.hash(payload.password, Number(env_1.envVars.BCRYPT_SALT_ROUND));
@@ -59,6 +65,12 @@ const updateUser = (payload, userId, decodedToken) => __awaiter(void 0, void 0, 
     if (payload.role) {
         if (decodedToken.role === user_interface_1.Role.USER || decodedToken.role === user_interface_1.Role.AGENT) {
             throw new appError_1.default(http_status_codes_1.default.FORBIDDEN, "You are not authorized");
+        }
+    }
+    if (payload.phone) {
+        const isPhoneExist = yield user_model_1.UserModel.findOne({ phone: payload.phone });
+        if (isPhoneExist) {
+            throw new appError_1.default(http_status_codes_1.default.CONFLICT, "Account already exists with this phone number");
         }
     }
     if (payload.agentData) {
@@ -70,6 +82,9 @@ const updateUser = (payload, userId, decodedToken) => __awaiter(void 0, void 0, 
         new: true,
         runValidators: true,
     });
+    if (payload.isDeleted === true) {
+        yield wallet_model_1.WalletModel.findOneAndUpdate({ userId: userId }, { status: wallet_interface_1.IWalletStatus.BLOCKED }, { new: true });
+    }
     let result;
     if (updatedUser) {
         result = updatedUser.toObject();
@@ -77,28 +92,68 @@ const updateUser = (payload, userId, decodedToken) => __awaiter(void 0, void 0, 
     }
     return result;
 });
-const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-    const users = yield user_model_1.UserModel.find();
-    const totalUsers = yield user_model_1.UserModel.countDocuments();
+const getAllUsers = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    const queryBuilder = new QueryBuilder_1.QueryBuilder(user_model_1.UserModel.find(), query);
+    const users = yield queryBuilder.filter().sort().paginate().search(["phone", "name", "role"]);
+    const [data, meta] = yield Promise.all([
+        users.build(),
+        queryBuilder.getMeta(),
+    ]);
     return {
-        data: users,
-        meta: {
-            total: totalUsers,
-        },
+        data,
+        meta,
     };
 });
 const getUserById = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const user = yield user_model_1.UserModel.findById(userId);
     if (!user) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found");
     }
+    const isWalletExist = yield wallet_model_1.WalletModel.findOne({ userId: userId });
+    if (!isWalletExist && user.role !== user_interface_1.Role.ADMIN) {
+        throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "Wallet not found");
+    }
+    const walletAmount = isWalletExist === null || isWalletExist === void 0 ? void 0 : isWalletExist.balance;
+    const walletStatus = isWalletExist === null || isWalletExist === void 0 ? void 0 : isWalletExist.status;
+    const totalTransactions = yield transaction_model_1.TransactionModel.find({
+        $or: [{ initiatedBy: user._id }, { receiverId: user._id }],
+    }).countDocuments();
+    const totalTransactionAmount = yield transaction_model_1.TransactionModel.aggregate([
+        {
+            $match: {
+                $or: [{ initiatedBy: user._id }, { receiverId: user._id }],
+            },
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$amount" },
+            },
+        },
+    ]);
     const result = user.toObject();
     delete result["password"];
-    return result;
+    return {
+        data: result,
+        meta: {
+            walletAmount,
+            walletStatus,
+            totalTransactions,
+            totalTransactionAmount: ((_a = totalTransactionAmount[0]) === null || _a === void 0 ? void 0 : _a.total) || 0,
+        },
+    };
+});
+const getMyProfile = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.UserModel.findById(userId).select("-password");
+    return {
+        data: user,
+    };
 });
 exports.UserService = {
     createUser,
     updateUser,
     getUserById,
     getAllUsers,
+    getMyProfile,
 };

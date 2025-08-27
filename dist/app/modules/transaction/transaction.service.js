@@ -17,17 +17,24 @@ const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const appError_1 = __importDefault(require("../../helpers/appError"));
 const user_model_1 = require("../user/user.model");
 const transaction_model_1 = require("./transaction.model");
-const getAllTransactions = () => __awaiter(void 0, void 0, void 0, function* () {
-    const transactions = yield transaction_model_1.TransactionModel.find();
-    const totalTransactions = yield transaction_model_1.TransactionModel.countDocuments();
+const QueryBuilder_1 = require("../../utils/QueryBuilder");
+const getAllTransactions = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    const queryBuilder = new QueryBuilder_1.QueryBuilder(transaction_model_1.TransactionModel.find(), query);
+    const transactions = yield queryBuilder
+        .filter()
+        .sort()
+        .paginate()
+        .search(["receiverRole", "initiatedByRole"]);
+    const [data, meta] = yield Promise.all([
+        transactions.build(),
+        queryBuilder.getMeta(),
+    ]);
     return {
-        data: transactions,
-        meta: {
-            total: totalTransactions,
-        },
+        data,
+        meta,
     };
 });
-const getMyTransactions = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+const getMyTransactions = (payload, query) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_model_1.UserModel.findById(payload.userId);
     if (!user) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found");
@@ -35,17 +42,21 @@ const getMyTransactions = (payload) => __awaiter(void 0, void 0, void 0, functio
     if (user.isDeleted) {
         throw new appError_1.default(http_status_codes_1.default.NOT_FOUND, "User is deleted");
     }
-    const transactions = yield transaction_model_1.TransactionModel.find({
+    const queryBuilder = new QueryBuilder_1.QueryBuilder(transaction_model_1.TransactionModel.find({
         $or: [{ initiatedBy: user._id }, { receiverId: user._id }],
-    });
-    const totalTransactions = yield transaction_model_1.TransactionModel.find({
-        $or: [{ initiatedBy: user._id }, { receiverId: user._id }],
-    }).countDocuments();
+    }), query);
+    const transactions = yield queryBuilder
+        .filter()
+        .sort()
+        .paginate()
+        .search(["receiverRole", "initiatedByRole"]);
+    const [data, meta] = yield Promise.all([
+        transactions.build(),
+        queryBuilder.getMeta(),
+    ]);
     return {
-        data: transactions,
-        meta: {
-            total: totalTransactions,
-        },
+        data,
+        meta,
     };
 });
 const getSingleTransaction = (payload, transactionId) => __awaiter(void 0, void 0, void 0, function* () {

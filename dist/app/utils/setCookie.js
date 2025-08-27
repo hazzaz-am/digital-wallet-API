@@ -1,25 +1,22 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setCookie = void 0;
-const setCookie = (res, tokenInfo) => __awaiter(void 0, void 0, void 0, function* () {
-    const options = {
-        httpOnly: true,
-        secure: false,
-    };
+const setCookie = (res, tokenInfo) => {
     if (tokenInfo.accessToken) {
-        res.cookie("accessToken", tokenInfo.accessToken, options);
+        res.cookie("accessToken", tokenInfo.accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            // maxAge: COOKIE_EXPIRE_TIME,
+        });
     }
     if (tokenInfo.refreshToken) {
-        res.cookie("refreshToken", tokenInfo.refreshToken, options);
+        res.cookie("refreshToken", tokenInfo.refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            // maxAge: COOKIE_EXPIRE_TIME,
+        });
     }
-});
+};
 exports.setCookie = setCookie;

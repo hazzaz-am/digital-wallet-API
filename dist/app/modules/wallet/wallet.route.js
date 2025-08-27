@@ -9,6 +9,7 @@ const checkAuthorization_1 = require("../../middlewares/checkAuthorization");
 const user_interface_1 = require("../user/user.interface");
 const router = (0, express_1.Router)();
 router.post("/create-wallet", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.createWalletZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.createWallet);
+router.patch("/update/:id", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.updateWalletZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.updateWallet);
 router.post("/top-up", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.topUpWalletZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values(user_interface_1.Role)), wallet_controller_1.WalletController.topUpWallet);
 router.post("/send-money", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.sendMoneyZodSchema), (0, checkAuthorization_1.checkAuthorization)(...Object.values([user_interface_1.Role.USER, user_interface_1.Role.AGENT])), wallet_controller_1.WalletController.sendMoney);
 router.post("/cash-in", (0, zodSchemaValidation_1.zodSchemaValidation)(wallet_validation_1.cashInZodSchema), (0, checkAuthorization_1.checkAuthorization)(user_interface_1.Role.AGENT), wallet_controller_1.WalletController.cashIn);
