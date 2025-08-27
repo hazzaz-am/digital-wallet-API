@@ -7,6 +7,7 @@ import {
 	createWalletZodSchema,
 	sendMoneyZodSchema,
 	topUpWalletZodSchema,
+	updateWalletZodSchema,
 } from "./wallet.validation";
 import { checkAuthorization } from "../../middlewares/checkAuthorization";
 import { Role } from "../user/user.interface";
@@ -18,6 +19,13 @@ router.post(
 	zodSchemaValidation(createWalletZodSchema),
 	checkAuthorization(...Object.values(Role)),
 	WalletController.createWallet
+);
+
+router.patch(
+	"/update/:id",
+	zodSchemaValidation(updateWalletZodSchema),
+	checkAuthorization(...Object.values(Role)),
+	WalletController.updateWallet
 );
 
 router.post(

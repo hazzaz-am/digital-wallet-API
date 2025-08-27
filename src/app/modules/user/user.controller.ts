@@ -47,13 +47,16 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getUserById = catchAsync(async (req: Request, res: Response) => {
-	const user = await UserService.getUserById(req.params.id);
+	const result = await UserService.getUserById(req.params.id);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
 		message: "User retrieved successfully",
-		data: user,
+		data: {
+			...result.data,
+			...result.meta,
+		},
 	});
 });
 

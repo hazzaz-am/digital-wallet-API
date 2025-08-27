@@ -60,6 +60,31 @@ const createWallet = async (
 	return newWallet;
 };
 
+const updateWallet = async (
+	payload: Partial<IWallet>,
+	walletId: string,
+	decodedToken: JwtPayload
+) => {
+	const wallet = await WalletModel.findById(walletId);
+
+	if (!wallet) {
+		throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+	}
+
+	if (payload.status) {
+		if (decodedToken.role === Role.USER || decodedToken.role === Role.AGENT) {
+			throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+		}
+	}
+
+	const updatedWallet = await WalletModel.findByIdAndUpdate(walletId, payload, {
+		new: true,
+		runValidators: true,
+	});
+
+	return updatedWallet;
+};
+
 const topUpWallet = async (payload: ITopUpWallet, decodedToken: JwtPayload) => {
 	const { walletId, amount } = payload;
 	const user = await UserModel.findById(decodedToken.userId);
@@ -242,6 +267,10 @@ const cashIn = async (agent: JwtPayload, phone: string, amount: number) => {
 	const recipient = await UserModel.findOne({ phone });
 	const agentPayload = await UserModel.findById(agent.userId);
 
+	if (!agentPayload) {
+		throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+	}
+
 	if (agentPayload?.agentData?.approvalStatus !== "APPROVED") {
 		throw new AppError(
 			httpStatus.FORBIDDEN,
@@ -257,19 +286,22 @@ const cashIn = async (agent: JwtPayload, phone: string, amount: number) => {
 		throw new AppError(httpStatus.NOT_FOUND, "Recipient account is deleted");
 	}
 
-	if (agent.userId === recipient._id.toString()) {
+	if (agentPayload._id.toString() === recipient._id.toString()) {
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
 			"You cannot cash in to yourself"
 		);
 	}
 
-	if (agent.role !== Role.AGENT) {
+	if (agentPayload.role !== Role.AGENT) {
 		throw new AppError(httpStatus.FORBIDDEN, "Only agents can cash in");
 	}
 
 	if (recipient.role !== Role.USER) {
-		throw new AppError(httpStatus.FORBIDDEN, "Only users can cash in");
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Agent can only cash in to user accounts"
+		);
 	}
 
 	const session = await mongoose.startSession();
@@ -277,7 +309,7 @@ const cashIn = async (agent: JwtPayload, phone: string, amount: number) => {
 
 	try {
 		const agentWallet = await WalletModel.findOne({
-			userId: agent.userId,
+			userId: agentPayload._id,
 		}).session(session);
 
 		if (!agentWallet) {
@@ -463,7 +495,11 @@ const cashOut = async (user: JwtPayload, phone: string, amount: number) => {
 
 const getAllWallets = async (query: Record<string, string>) => {
 	const queryBuilder = new QueryBuilder(WalletModel.find(), query);
-	const wallets = await queryBuilder.filter().sort().paginate();
+	const wallets = await queryBuilder
+		.filter()
+		.sort()
+		.paginate()
+		.search(["status", "type"]);
 
 	const [data, meta] = await Promise.all([
 		wallets.build(),
@@ -495,4 +531,5 @@ export const WalletService = {
 	cashIn,
 	getAllWallets,
 	getMyWallet,
+	updateWallet,
 };

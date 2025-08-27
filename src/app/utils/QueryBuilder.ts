@@ -26,7 +26,7 @@ export class QueryBuilder<T> {
 			if (filter.endDate) {
 				let end = new Date(filter.endDate);
 				end.setHours(23, 59, 59, 999);
-				dateFilter.$lte = end
+				dateFilter.$lte = end;
 			}
 
 			(filter as any).createdAt = dateFilter;
@@ -36,6 +36,17 @@ export class QueryBuilder<T> {
 		}
 
 		this.modelQuery = this.modelQuery.find(filter);
+		return this;
+	}
+
+	search(searchableField: string[]): this {
+		const searchTerm = this.query.searchTerm || "";
+		const searchQuery = {
+			$or: searchableField.map((field) => ({
+				[field]: { $regex: searchTerm, $options: "i" },
+			})),
+		};
+		this.modelQuery = this.modelQuery.find(searchQuery);
 		return this;
 	}
 

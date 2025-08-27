@@ -9,6 +9,7 @@ import { QueryBuilder } from "../../utils/QueryBuilder";
 import mongoose from "mongoose";
 import { WalletModel } from "../wallet/wallet.model";
 import { IWalletStatus } from "../wallet/wallet.interface";
+import { TransactionModel } from "../transaction/transaction.model";
 
 const createUser = async (payload: Partial<IUser>) => {
 	const { phone, password, ...rest } = payload;
@@ -55,11 +56,13 @@ const updateUser = async (
 		throw new AppError(httpStatus.NOT_FOUND, "User not found");
 	}
 
-	if (user.isDeleted) {
-		throw new AppError(
-			httpStatus.BAD_REQUEST,
-			"User is deleted, cannot update"
-		);
+	if (payload.isDeleted === undefined) {
+		if (user.isDeleted) {
+			throw new AppError(
+				httpStatus.BAD_REQUEST,
+				"User is deleted, cannot update"
+			);
+		}
 	}
 
 	if (payload.password) {
@@ -72,6 +75,16 @@ const updateUser = async (
 	if (payload.role) {
 		if (decodedToken.role === Role.USER || decodedToken.role === Role.AGENT) {
 			throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
+		}
+	}
+
+	if (payload.phone) {
+		const isPhoneExist = await UserModel.findOne({ phone: payload.phone });
+		if (isPhoneExist) {
+			throw new AppError(
+				httpStatus.CONFLICT,
+				"Account already exists with this phone number"
+			);
 		}
 	}
 
@@ -109,7 +122,7 @@ const updateUser = async (
 const getAllUsers = async (query: Record<string, string>) => {
 	const queryBuilder = new QueryBuilder(UserModel.find(), query);
 
-	const users = await queryBuilder.filter().sort().paginate();
+	const users = await queryBuilder.filter().sort().paginate().search(["phone", "name", "role"]);
 
 	const [data, meta] = await Promise.all([
 		users.build(),
@@ -128,10 +141,44 @@ const getUserById = async (userId: string) => {
 		throw new AppError(httpStatus.NOT_FOUND, "User not found");
 	}
 
+	const isWalletExist = await WalletModel.findOne({ userId: userId });
+
+	if (!isWalletExist && user.role !== Role.ADMIN) {
+		throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+	}
+
+	const walletAmount = isWalletExist?.balance;
+	const walletStatus = isWalletExist?.status;
+	const totalTransactions = await TransactionModel.find({
+		$or: [{ initiatedBy: user._id }, { receiverId: user._id }],
+	}).countDocuments();
+
+	const totalTransactionAmount = await TransactionModel.aggregate([
+		{
+			$match: {
+				$or: [{ initiatedBy: user._id }, { receiverId: user._id }],
+			},
+		},
+		{
+			$group: {
+				_id: null,
+				total: { $sum: "$amount" },
+			},
+		},
+	]);
+
 	const result = user.toObject();
 	delete result["password"];
 
-	return result;
+	return {
+		data: result,
+		meta: {
+			walletAmount,
+			walletStatus,
+			totalTransactions,
+			totalTransactionAmount: totalTransactionAmount[0]?.total || 0,
+		},
+	};
 };
 
 const getMyProfile = async (userId: string) => {

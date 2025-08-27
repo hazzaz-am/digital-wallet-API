@@ -1,10 +1,19 @@
 import z from "zod";
+import { IWalletStatus } from "./wallet.interface";
 
 export const createWalletZodSchema = z.object({
 	userId: z.string({
 		error: "User ID must be a string",
 	}),
 	balance: z.number().optional(),
+});
+
+export const updateWalletZodSchema = z.object({
+	status: z
+		.enum(IWalletStatus, {
+			error: "Wallet must be a valid status",
+		})
+		.optional(),
 });
 
 export const topUpWalletZodSchema = z.object({

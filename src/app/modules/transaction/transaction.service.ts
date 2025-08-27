@@ -8,7 +8,11 @@ import { QueryBuilder } from "../../utils/QueryBuilder";
 const getAllTransactions = async (query: Record<string, string>) => {
 	const queryBuilder = new QueryBuilder(TransactionModel.find(), query);
 
-	const transactions = await queryBuilder.filter().sort().paginate();
+	const transactions = await queryBuilder
+		.filter()
+		.sort()
+		.paginate()
+		.search(["receiverRole", "initiatedByRole"]);
 
 	const [data, meta] = await Promise.all([
 		transactions.build(),
@@ -40,7 +44,11 @@ const getMyTransactions = async (
 		query
 	);
 
-	const transactions = await queryBuilder.filter().sort().paginate();
+	const transactions = await queryBuilder
+		.filter()
+		.sort()
+		.paginate()
+		.search(["receiverRole", "initiatedByRole"]);
 
 	const [data, meta] = await Promise.all([
 		transactions.build(),
