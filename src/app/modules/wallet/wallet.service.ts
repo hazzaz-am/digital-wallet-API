@@ -528,14 +528,25 @@ const deleteWallet = async (walletId: string, user: JwtPayload) => {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
 
-	const wallet = await WalletModel.findOneAndDelete({
-		_id: walletId,
-		userId: user.userId,
-	});
-
+	// Find wallet first
+	const wallet = await WalletModel.findById(walletId);
 	if (!wallet) {
 		throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
 	}
+
+	// Check permission
+	const isOwner = wallet.userId.toString() === user.userId.toString();
+	const isAdmin = user.role === Role.ADMIN;
+
+	if (!isOwner && !isAdmin) {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"You are not allowed to delete this wallet"
+		);
+	}
+
+	// Delete wallet
+	await wallet.deleteOne();
 
 	return wallet;
 };
