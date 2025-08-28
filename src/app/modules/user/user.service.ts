@@ -102,18 +102,14 @@ const updateUser = async (
 		runValidators: true,
 	});
 
-	if (payload.isDeleted === true) {
+	if (payload.isDeleted !== undefined) {
 		await WalletModel.findOneAndUpdate(
-			{ userId: userId },
-			{ status: IWalletStatus.BLOCKED },
-			{ new: true }
-		);
-	}
-
-	if (payload.isDeleted === false) {
-		await WalletModel.findOneAndUpdate(
-			{ userId: userId },
-			{ status: IWalletStatus.ACTIVE },
+			{ userId },
+			{
+				status: payload.isDeleted
+					? IWalletStatus.BLOCKED
+					: IWalletStatus.ACTIVE,
+			},
 			{ new: true }
 		);
 	}
@@ -130,7 +126,11 @@ const updateUser = async (
 const getAllUsers = async (query: Record<string, string>) => {
 	const queryBuilder = new QueryBuilder(UserModel.find(), query);
 
-	const users = await queryBuilder.filter().sort().paginate().search(["phone", "name", "role"]);
+	const users = await queryBuilder
+		.filter()
+		.sort()
+		.paginate()
+		.search(["phone", "name", "role"]);
 
 	const [data, meta] = await Promise.all([
 		users.build(),
