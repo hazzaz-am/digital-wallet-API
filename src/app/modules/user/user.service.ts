@@ -110,6 +110,14 @@ const updateUser = async (
 		);
 	}
 
+	if (payload.isDeleted === false) {
+		await WalletModel.findOneAndUpdate(
+			{ userId: userId },
+			{ status: IWalletStatus.ACTIVE },
+			{ new: true }
+		);
+	}
+
 	let result;
 	if (updatedUser) {
 		result = updatedUser.toObject();
