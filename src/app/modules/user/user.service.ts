@@ -56,13 +56,11 @@ const updateUser = async (
 		throw new AppError(httpStatus.NOT_FOUND, "User not found");
 	}
 
-	if (payload.isDeleted === undefined) {
-		if (user.isDeleted) {
-			throw new AppError(
-				httpStatus.BAD_REQUEST,
-				"User is deleted, cannot update"
-			);
-		}
+	if (user.isDeleted) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			"User is deleted, cannot update"
+		);
 	}
 
 	if (payload.password) {
@@ -101,18 +99,6 @@ const updateUser = async (
 		new: true,
 		runValidators: true,
 	});
-
-	if (payload.isDeleted !== undefined) {
-		await WalletModel.findOneAndUpdate(
-			{ userId },
-			{
-				status: payload.isDeleted
-					? IWalletStatus.BLOCKED
-					: IWalletStatus.ACTIVE,
-			},
-			{ new: true }
-		);
-	}
 
 	let result;
 	if (updatedUser) {
